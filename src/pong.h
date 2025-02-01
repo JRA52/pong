@@ -35,7 +35,13 @@ struct Pong
     int serving_player;
     int winning_player;
 
+    float x1;
+    float y1;
+    float x2;
+    float y2;
+
     bool CPU;
+    bool cycle;
 
     struct Sounds* sounds;
 };

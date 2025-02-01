@@ -139,39 +139,51 @@ void handle_input_pong(struct Pong* pong, ALLEGRO_KEYBOARD_STATE* state)
         }
     }
 }
-
 void cpu_ia (struct Pong* pong)
 {
-    if(pong->ball.x > (TABLE_WIDTH/2 + TABLE_WIDTH/4))
-    {
-        if (pong->ball.y > (pong->player2.y+pong->player2.height/2))
+    float m = ((pong->y2 - pong->y1 ) / (pong->x2 - pong->x1));
+    float b = pong->y1 - m*pong->x1;
+    float y_cpu = m*pong->player2.x + b;
+
+    if(pong->ball.x > (TABLE_WIDTH/2 + TABLE_WIDTH/4 ) )
+    {        
+        if ((pong->player2.y+pong->player2.height) > y_cpu && pong->player2.y < y_cpu)
         {
-            pong->player2.vy = PADDLE_SPEED;                    
+            pong->player2.vy = 0;
         }
-        
-        if (pong->ball.y < (pong->player2.y+pong->player2.height/2))
+        else if (pong->ball.vx <= 0)
+        {
+            pong->player2.vy = 0;
+        }
+        else if (y_cpu > (pong->player2.y+pong->player2.height/2))
+        {
+            pong->player2.vy = PADDLE_SPEED;
+        }        
+        else if (y_cpu < (pong->player2.y+pong->player2.height/2))
         {
             pong->player2.vy = -PADDLE_SPEED;
         }
-
-        if (pong->ball.y == (pong->player2.y+pong->player2.height/2))
-        {
-            pong->player2.vy = 0;
-        }
-        if (pong->ball.vx <= 0)
-        {
-            pong->player2.vy = 0;
-        }
     }
+    else pong->player2.vy = 0;
 }
 
 void update_pong(struct Pong* pong, double dt)
 {
     if (pong->state == PLAY)
-    {
-        if (pong->CPU == true)
+    {        
+        if (pong->CPU)
         {
-            cpu_ia(pong);
+            if (pong->cycle)
+            {
+                pong->x1 = pong->ball.x + BALL_SIZE/2;
+                pong->y1 = pong->ball.y + BALL_SIZE/2;
+            }
+            else
+            {
+                pong->x2 = pong->ball.x + BALL_SIZE/2;
+                pong->y2 = pong->ball.y + BALL_SIZE/2;
+                cpu_ia(pong);
+            }
         }
         update_paddle(&pong->player1, dt);
         update_paddle(&pong->player2, dt);
@@ -202,6 +214,7 @@ void update_pong(struct Pong* pong, double dt)
                 pong->state = SERVE;
                 init_ball(&pong->ball, TABLE_WIDTH / 2 - BALL_SIZE / 2, TABLE_HEIGHT / 2 - BALL_SIZE / 2, BALL_SIZE);
             }
+            pong->cycle = false;
         }
         else if (ball_hitbox.x2 < 0)
         {
@@ -219,6 +232,7 @@ void update_pong(struct Pong* pong, double dt)
                 pong->state = SERVE;
                 init_ball(&pong->ball, TABLE_WIDTH / 2 - BALL_SIZE / 2, TABLE_HEIGHT / 2 - BALL_SIZE / 2, BALL_SIZE);
             }
+            pong->cycle = false;
         }
 
         if (ball_hitbox.y1 <= 0)
@@ -226,12 +240,14 @@ void update_pong(struct Pong* pong, double dt)
             al_play_sample(pong->sounds->wall_hit, /* gain */ 1.0, /* center */ 0.0, /* speed */ 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
             pong->ball.y = 0;
             pong->ball.vy *= -1;
+            pong->cycle = false;
         }
         else if (ball_hitbox.y2 >= TABLE_HEIGHT)
         {
             al_play_sample(pong->sounds->wall_hit, /* gain */ 1.0, /* center */ 0.0, /* speed */ 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
             pong->ball.y = TABLE_HEIGHT - pong->ball.height;
             pong->ball.vy *= -1;
+            pong->cycle = false;
         }
         
         if (collides(ball_hitbox, player1_hitbox))
@@ -307,7 +323,14 @@ void render_pong(struct Pong pong, struct Fonts fonts)
         }
         else
         {
-            al_draw_text(fonts.large_font, al_map_rgb(255, 255, 255), TABLE_WIDTH / 2, TABLE_HEIGHT / 3, ALLEGRO_ALIGN_CENTER, "Cpu won");
+            if(pong.winning_player == 2)
+            {
+                al_draw_text(fonts.large_font, al_map_rgb(255, 255, 255), TABLE_WIDTH / 2, TABLE_HEIGHT / 3, ALLEGRO_ALIGN_CENTER, "Cpu won!");
+            }
+            else
+            {
+                sprintf(winner_message, "Player %d won!", pong.winning_player);
+            }                
         }        
         al_draw_text(fonts.large_font, al_map_rgb(255, 255, 255), TABLE_WIDTH / 2, TABLE_HEIGHT / 3, ALLEGRO_ALIGN_CENTER, winner_message);
         al_draw_text(fonts.large_font, al_map_rgb(255, 255, 255), TABLE_WIDTH / 2, TABLE_HEIGHT / 2, ALLEGRO_ALIGN_CENTER, "Press enter to restart");

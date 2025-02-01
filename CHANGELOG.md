@@ -18,3 +18,8 @@ in void init_pong now pong->state starts in MENU (pong.c line 25)
 in state PLAY now when playing against cpu the up and down keys are disabled (pong.c line 36)
 in state DONE now can restart or go back menu (pong.c line 304)
 The reset scores only excecute if the state isnt MENU (pong.c line 107)
+
+
+### FIXED
+winning message vs cpu
+erratic moviment cpu paddle
